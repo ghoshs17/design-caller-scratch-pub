@@ -1,0 +1,34 @@
+name: design-upload
+on:
+  push:
+    paths: ['trigger/**']
+  workflow_dispatch:
+    inputs:
+      nogroup: {default: 'false'}
+      claim_repo: {default: ''}
+      wf_sha: {default: ''}
+      deployment_id: {default: ''}
+      pad_bytes: {default: '0'}
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+concurrency:
+  group: ${{ inputs.nogroup == 'true' && format('design-upload-nogroup-{0}', github.run_id) || format('design-upload-{0}', github.repository_id) }}
+  cancel-in-progress: false
+permissions: {}
+jobs:
+  upload:
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    uses: ghoshs17/design-brain-scratch-pub/.github/workflows/upload.yml@28e8284caf10817240d0c8bc581c1e4ee60be770
+    with:
+      claim_repo: ${{ inputs.claim_repo }}
+      wf_sha: ${{ inputs.wf_sha }}
+      deployment_id: ${{ inputs.deployment_id }}
+      pad_bytes: ${{ fromJSON(inputs.pad_bytes || '0') }}
+    secrets:
+      central_token: ${{ secrets.CENTRAL_TOKEN }}
